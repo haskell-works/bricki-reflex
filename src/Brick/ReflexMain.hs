@@ -1,10 +1,10 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE LambdaCase          #-}
 {-# LANGUAGE MonadComprehensions #-}
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes          #-}
+{-# LANGUAGE RecursiveDo         #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Brick.ReflexMain
   ( brickWrapper
@@ -16,57 +16,41 @@ where
 
 
 
-import qualified Reflex as R
-import qualified Reflex.Host.Class as R
-import qualified Reflex.Host.App as RH
+import qualified Reflex                       as R
+import qualified Reflex.Host.App              as RH
+import qualified Reflex.Host.Class            as R
 
-import           Brick.Types                      ( Widget
-                                                  , locationRowL
-                                                  , locationColumnL
-                                                  , CursorLocation(..)
-                                                  , Extent
-                                                  )
-import           Brick.Types.Internal             ( RenderState(..)
-                                                  )
-import           Brick.Widgets.Internal           ( renderFinal
-                                                  )
 import           Brick.AttrMap
-import           Brick.Main                       ( neverShowCursor
-                                                  , showFirstCursor
-                                                  , showCursorNamed
-                                                  )
+import           Brick.Main                   (neverShowCursor, showCursorNamed,
+                                               showFirstCursor)
+import           Brick.Main                   (renderFinal)
+import           Brick.Types                  (CursorLocation (..), Extent,
+                                               Widget, locationColumnL,
+                                               locationRowL)
+import           Brick.Types                  (RenderState (..),
+                                               initialRenderState)
 
-import qualified Data.Map as M
-import qualified Data.Set as S
+import qualified Data.Map                     as M
+import qualified Data.Set                     as S
 
-import           Control.Monad
-import           Data.Functor
 import           Control.Concurrent
-import           Control.Exception                (finally)
-import           Data.Monoid
-import           Lens.Micro                       ((^.), (<&>))
-import           Data.Align
-import           Data.These
-import           Data.IORef
+import           Control.Exception            (finally)
+import           Control.Monad
 import           Control.Monad.IO.Class
+import           Data.Align
+import           Data.Functor
+import           Data.IORef
+import           Data.Monoid
+import           Data.These
+import           Lens.Micro                   ((<&>), (^.))
 
-import           Graphics.Vty
-                                                  ( Vty
-                                                  , Picture(..)
-                                                  , Cursor(..)
-                                                  , Event(..)
-                                                  , update
-                                                  , outputIface
-                                                  , inputIface
-                                                  , displayBounds
-                                                  , shutdown
-                                                  , mkVty
-                                                  , defaultConfig
-                                                  )
-import           Graphics.Vty.Input               ( _eventChannel
-                                                  )
 import           Control.Concurrent.STM.TChan
 import           Control.Monad.STM
+import           Graphics.Vty                 (Cursor (..), Event (..),
+                                               Picture (..), Vty, defaultConfig,
+                                               displayBounds, inputIface, mkVty,
+                                               outputIface, shutdown, update)
+import           Graphics.Vty.Input           (_eventChannel)
 
 
 
@@ -82,9 +66,9 @@ import           Control.Monad.STM
 -- The remaining one is brick's "input" event type.
 --
 -- Triggering any of the output 'Dynamic's causes a redraw.
--- 
+--
 -- For the suspending-functionality, the following caveats apply:
--- 
+--
 --     * Starting a second IO-action before all previously started ones
 --       have "returned" leads is undefined behaviour (i.e. the current
 --       implementation might not even 'error' out but fail in some
@@ -136,8 +120,6 @@ brickWrapper
      --    ui to run some external commands etc. see the demo program for
      --    usage.
 brickWrapper shouldHaltE widgetDyn cursorDyn attrDyn = do
-  let initialRS = RS M.empty [] S.empty mempty []
-
   (eventEvent   , eventH   ) <- RH.newExternalEvent
   (shutdownEvent, shutdownH) <- RH.newExternalEvent
   startupEvent               <- RH.getPostBuild
@@ -206,10 +188,10 @@ brickWrapper shouldHaltE widgetDyn cursorDyn attrDyn = do
   --           , chooseCursor <- cursorDyn
   --           , attrs        <- attrDyn
   --           ]
-  -- 
+  --
   -- return ()
 
-  rsRef <- liftIO $ newIORef initialRS
+  rsRef <- liftIO $ newIORef initialRenderState
 
   RH.performEvent_ $ shouldHaltE <&> \() -> liftIO $ void $ shutdownH ()
 
